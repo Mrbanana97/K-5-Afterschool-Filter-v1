@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -18,6 +18,11 @@ export const metadata: Metadata = {
   icons: { icon: "/LILA-logo (1).svg" },
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -25,9 +30,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="bg-gray-50">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased flex justify-center items-start min-h-screen bg-gray-50 text-gray-900`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased flex justify-center items-start min-h-screen bg-gray-50 text-gray-900`}>
         {children}
       </body>
     </html>

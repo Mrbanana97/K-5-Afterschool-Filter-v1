@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Sidebar from "./components/Sidebar";
-import { IconCalendar, IconFilter, IconSearch, IconSort } from "./components/icons";
+import { IconCalendar, IconFilter, IconSearch, IconSort, IconMenu } from "./components/icons";
 
 // Types
 export type Grade = "K" | 1 | 2 | 3 | 4 | 5;
@@ -86,6 +86,7 @@ function downloadImportTemplate() {
 
 export default function AfterschoolFilterPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [students, setStudents] = useState<Student[]>(() => {
     if (typeof window === "undefined") return initialStudents;
     try {
@@ -117,6 +118,8 @@ export default function AfterschoolFilterPage() {
   const [newActivity, setNewActivity] = useState("");
   const [newActivityColor, setNewActivityColor] = useState<string>("#6366F1");
   const [view, setView] = useState<"filter" | "manage" | "import" | "activities">("filter");
+  const [fadeClass, setFadeClass] = useState<string>("opacity-100");
+  const transitionMs = 200;
   const [openPopover, setOpenPopover] = useState<null | "grade" | "sub" | "activity" | "day" | "sort">(null);
 
   // filters (Filter & Print)
@@ -276,6 +279,16 @@ export default function AfterschoolFilterPage() {
     setStudents([]);
   }
 
+  // Fade transition for tab changes
+  function handleChangeView(v: "filter" | "manage" | "import" | "activities") {
+    if (v === view) return;
+    setFadeClass("opacity-0");
+    setTimeout(() => {
+      setView(v);
+      requestAnimationFrame(() => setFadeClass("opacity-100"));
+    }, transitionMs);
+  }
+
   function previewClass() {
     if (!importGrade) { alert("Choose a grade (e.g., K, 1…)"); return; }
     if (!importSub) { alert("Choose a subclass (A/B/C)"); return; }
@@ -316,28 +329,66 @@ export default function AfterschoolFilterPage() {
   return (
     <>
       <main className="min-h-screen bg-gray-50 text-gray-900">
-        {/* Page title header */}
-        <div className="max-w-[1200px] mx-auto px-4 pt-6">
-          <div className="flex items-center gap-3">
-            <Image src="/LILA-logo (1).svg" alt="LILA" width={64} height={64} className="h-12 w-12 md:h-16 md:w-16" />
-            <h1 className="text-xl md:text-2xl font-semibold">LILA After school Filter</h1>
+        {/* Mobile top bar */}
+        <div className="md:hidden sticky top-0 z-30 bg-gray-50/90 backdrop-blur border-b border-gray-200">
+          <div className="max-w-[1200px] mx-auto px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <button aria-label="Open menu" onClick={() => setMobileMenuOpen(true)} className="p-2 rounded-lg border bg-white">
+                <IconMenu />
+              </button>
+              <div className="flex items-center gap-2">
+                <Image src="/LILA-logo (1).svg" alt="LILA" width={32} height={32} className="h-8 w-8" />
+                <span className="font-semibold">LILA Afterschool</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Main two-column area (flex) */}
-  <div className="max-w-[1200px] mx-auto px-4 py-6 flex gap-6 items-start w-full">
-          <div className="sticky top-8 self-start shrink-0">
+        {/* Page title header (desktop) */}
+        <div className="hidden md:block">
+          <div className="max-w-[1200px] mx-auto px-4 pt-6">
+            <div className="flex items-center gap-3">
+              <Image src="/LILA-logo (1).svg" alt="LILA" width={64} height={64} className="h-12 w-12 md:h-16 md:w-16" />
+              <h1 className="text-xl md:text-2xl font-semibold">LILA After school Filter</h1>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile slide-over sidebar */}
+        {mobileMenuOpen && (
+          <div className="md:hidden fixed inset-0 z-40">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setMobileMenuOpen(false)} />
+            <div className="absolute left-0 top-0 bottom-0 w-72 max-w-[85%] bg-[#0f1217] p-3 shadow-xl">
+              <div className="flex items-center justify-between mb-2 text-gray-100">
+                <div className="font-semibold">Menu</div>
+                <button className="px-2 py-1 rounded border border-white/10 bg-white/5" onClick={() => setMobileMenuOpen(false)}>Close</button>
+              </div>
+              <Sidebar
+                current={view}
+                onSelect={(v)=>{ handleChangeView(v); setMobileMenuOpen(false); }}
+                collapsed={false}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Flex layout: sidebar left, content right */}
+        <div className="max-w-[1200px] mx-auto px-4 py-6 w-full flex gap-6 items-start">
+          {/* Sidebar column (desktop) */}
+          <div className="hidden md:block shrink-0">
             <Sidebar
               current={view}
-              onSelect={(v)=>setView(v)}
+              onSelect={(v)=>handleChangeView(v)}
               collapsed={sidebarCollapsed}
               onToggle={() => setSidebarCollapsed(v => !v)}
             />
           </div>
 
+          {/* Content column */}
           <div className="flex-1 min-w-0">
+            <div className={`transition-opacity duration-200 ${fadeClass}`}>
             {view === "filter" && (
-              <>
+              <div className="bg-white border border-gray-200 rounded-2xl p-4 md:p-6 shadow flex flex-col min-h-[calc(100dvh-8rem)]">
                 {/* Filter toolbar */}
                 <div className="flex flex-wrap gap-2 items-center mb-4 relative">
                   {/* Search (moved here from top header) */}
@@ -453,35 +504,34 @@ export default function AfterschoolFilterPage() {
                     )}
                   </div>
                 </div>
-
                 {/* Results table */}
-                <section id="results-table" className="overflow-x-auto bg-white rounded-2xl shadow border border-gray-200">
+                <section id="results-table" className="overflow-x-auto flex-1 rounded-xl border border-gray-200">
                   <table className="min-w-full text-sm">
                     <thead className="bg-gray-100">
                       <tr>
-                        <th className="text-left font-semibold px-4 py-3">ID</th>
-                        <th className="text-left font-semibold px-4 py-3">Name</th>
-                        <th className="text-left font-semibold px-4 py-3">Grade</th>
-                        <th className="text-left font-semibold px-4 py-3">Sub</th>
-                        <th className="text-left font-semibold px-4 py-3">Afterschool Activity</th>
-                        <th className="text-left font-semibold px-4 py-3">Day</th>
+      <th className="text-left font-semibold px-3 md:px-4 py-3">ID</th>
+      <th className="text-left font-semibold px-3 md:px-4 py-3">Name</th>
+      <th className="text-left font-semibold px-3 md:px-4 py-3">Grade</th>
+      <th className="text-left font-semibold px-3 md:px-4 py-3">Sub</th>
+      <th className="text-left font-semibold px-3 md:px-4 py-3">Afterschool Activity</th>
+      <th className="text-left font-semibold px-3 md:px-4 py-3">Day</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filtered.flatMap((s) => (
                         s.activities.map((a, idx) => (
                           <tr key={`${s.id}-${idx}`} className="border-t border-gray-200">
-                            <td className="px-4 py-2 whitespace-nowrap">{s.id}</td>
-                            <td className="px-4 py-2 whitespace-nowrap">{fullName(s)}</td>
-                            <td className="px-4 py-2">{s.grade === "K" ? "K" : s.grade}</td>
-                            <td className="px-4 py-2">{s.subClass}</td>
-                            <td className="px-4 py-2">
+                            <td className="px-3 md:px-4 py-2 whitespace-nowrap">{s.id}</td>
+                            <td className="px-3 md:px-4 py-2 whitespace-nowrap">{fullName(s)}</td>
+                            <td className="px-3 md:px-4 py-2">{s.grade === "K" ? "K" : s.grade}</td>
+                            <td className="px-3 md:px-4 py-2">{s.subClass}</td>
+                            <td className="px-3 md:px-4 py-2">
                               <span className="inline-flex items-center gap-2">
                                 <span className="inline-block w-2.5 h-2.5 rounded-full border" style={{ backgroundColor: activityColors[a.name] || '#e5e7eb', borderColor: activityColors[a.name] || '#e5e7eb' }} />
                                 {a.name}
                               </span>
                             </td>
-                            <td className="px-4 py-2">{a.day ?? "—"}</td>
+                            <td className="px-3 md:px-4 py-2">{a.day ?? "—"}</td>
                           </tr>
                         ))
                       ))}
@@ -497,11 +547,11 @@ export default function AfterschoolFilterPage() {
                 <div className="flex justify-end mt-4">
                   <button onClick={exportFilteredTable} className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700">Download / Print</button>
                 </div>
-              </>
+              </div>
             )}
 
             {view !== "filter" && (
-              <div className="bg-white border border-gray-200 rounded-2xl p-6 text-sm text-gray-700">
+              <div className="bg-white border border-gray-200 rounded-2xl p-4 md:p-6 text-sm text-gray-700 flex flex-col min-h-[calc(100dvh-8rem)]">
                 {view === "manage" && (
                   <>
                     <header className="mb-6">
@@ -558,14 +608,14 @@ export default function AfterschoolFilterPage() {
                           <button onClick={clearAllStudents} className="px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50">Clear all students</button>
                         </div>
                       </div>
-                      <div className="overflow-auto rounded-xl border border-gray-200 max-h-[32rem]">
+          <div className="overflow-auto rounded-xl border border-gray-200 max-h-[32rem]">
                         <table className="w-full text-sm">
                           <thead className="bg-gray-100 sticky top-0">
                             <tr>
-                              <th className="text-left px-3 py-2">Student</th>
-                              <th className="text-left px-3 py-2">Grade/Sub</th>
-                              <th className="text-left px-3 py-2">Current afterschool</th>
-                              <th className="text-left px-3 py-2">Action</th>
+            <th className="text-left px-2 md:px-3 py-2">Student</th>
+            <th className="text-left px-2 md:px-3 py-2">Grade/Sub</th>
+            <th className="text-left px-2 md:px-3 py-2">Current afterschool</th>
+            <th className="text-left px-2 md:px-3 py-2">Action</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -575,9 +625,9 @@ export default function AfterschoolFilterPage() {
                               .sort((a,b)=> (a.grade===b.grade? a.subClass.localeCompare(b.subClass): (a.grade==="K"?0:a.grade) - (b.grade==="K"?0:b.grade)) || fullName(a).localeCompare(fullName(b)))
                               .map(s=> (
                                 <tr key={s.id} className="border-t border-gray-200">
-                                  <td className="px-3 py-2 whitespace-nowrap">{fullName(s)}</td>
-                                  <td className="px-3 py-2">{s.grade === "K" ? "K" : s.grade}/{s.subClass}</td>
-                                  <td className="px-3 py-2">
+                                  <td className="px-2 md:px-3 py-2 whitespace-nowrap">{fullName(s)}</td>
+                                  <td className="px-2 md:px-3 py-2">{s.grade === "K" ? "K" : s.grade}/{s.subClass}</td>
+                                  <td className="px-2 md:px-3 py-2">
                                     <div className="flex flex-wrap gap-2">
                                       {s.activities.filter(a => a.when === "afterschool").map((a, idx) => (
                                         <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 border text-xs">
@@ -591,7 +641,7 @@ export default function AfterschoolFilterPage() {
                                       )}
                                     </div>
                                   </td>
-                                  <td className="px-3 py-2">
+                                  <td className="px-2 md:px-3 py-2">
                                     <div className="flex items-center gap-2">
                                       <button onClick={() => assignActivityToStudent(s.id)} className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm">Assign</button>
                                       <button onClick={() => deleteStudent(s.id)} className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-sm">Delete</button>
@@ -662,20 +712,20 @@ export default function AfterschoolFilterPage() {
                           <table className="w-full text-sm">
                             <thead className="bg-gray-100 sticky top-0">
                               <tr>
-                                <th className="text-left px-3 py-2">First</th>
-                                <th className="text-left px-3 py-2">Last</th>
-                                <th className="text-left px-3 py-2">Grade</th>
-                                <th className="text-left px-3 py-2">Subclass</th>
-                                <th className="text-left px-3 py-2">Activity (type or pick)</th>
-                                <th className="text-left px-3 py-2">Day</th>
-                                <th className="text-left px-3 py-2">Remove</th>
+                                <th className="text-left px-2 md:px-3 py-2">First</th>
+                                <th className="text-left px-2 md:px-3 py-2">Last</th>
+                                <th className="text-left px-2 md:px-3 py-2">Grade</th>
+                                <th className="text-left px-2 md:px-3 py-2">Subclass</th>
+                                <th className="text-left px-2 md:px-3 py-2">Activity (type or pick)</th>
+                                <th className="text-left px-2 md:px-3 py-2">Day</th>
+                                <th className="text-left px-2 md:px-3 py-2">Remove</th>
                               </tr>
                             </thead>
                             <tbody>
                               {rows.map(r => (
                                 <tr key={r.id} className="border-t border-gray-200">
-                                  <td className="px-3 py-2"><input value={r.first} onChange={e => updateRow(r.id, { first: e.target.value })} className="w-40 rounded border px-2 py-1" /></td>
-                                  <td className="px-3 py-2"><input value={r.last} onChange={e => updateRow(r.id, { last: e.target.value })} className="w-40 rounded border px-2 py-1" /></td>
+                                  <td className="px-2 md:px-3 py-2"><input value={r.first} onChange={e => updateRow(r.id, { first: e.target.value })} className="w-36 md:w-40 rounded border px-2 py-1" /></td>
+                                  <td className="px-2 md:px-3 py-2"><input value={r.last} onChange={e => updateRow(r.id, { last: e.target.value })} className="w-36 md:w-40 rounded border px-2 py-1" /></td>
                                   <td className="px-3 py-2">
                                     <select value={r.grade === undefined ? "" : r.grade === "" ? "" : String(r.grade)} onChange={e => { const v = e.target.value; if (v === "") updateRow(r.id, { grade: "" }); else if (v === "K") updateRow(r.id, { grade: "K" }); else updateRow(r.id, { grade: Number(v) as Grade }); }} className="rounded border px-2 py-1">
                                       <option value="">—</option>
@@ -688,8 +738,8 @@ export default function AfterschoolFilterPage() {
                                       {subclassOptions.map(sc => (<option key={sc} value={sc}>{sc}</option>))}
                                     </select>
                                   </td>
-                                  <td className="px-3 py-2">
-                                    <input list="activities-suggest" value={r.activity} onChange={e => updateRow(r.id, { activity: e.target.value })} placeholder="(optional)" className="w-56 rounded border px-2 py-1" />
+                                  <td className="px-2 md:px-3 py-2">
+                                    <input list="activities-suggest" value={r.activity} onChange={e => updateRow(r.id, { activity: e.target.value })} placeholder="(optional)" className="w-48 md:w-56 rounded border px-2 py-1" />
                                     <div className="text-xs text-gray-500 mt-1">Leave blank if no afterschool.</div>
                                   </td>
                                   <td className="px-3 py-2">
@@ -698,7 +748,7 @@ export default function AfterschoolFilterPage() {
                                       {dayOptions.map(d => (<option key={d} value={d}>{d}</option>))}
                                     </select>
                                   </td>
-                                  <td className="px-3 py-2"><button onClick={() => deleteRow(r.id)} className="text-sm px-3 py-1.5 rounded-lg border">Delete</button></td>
+                                  <td className="px-2 md:px-3 py-2"><button onClick={() => deleteRow(r.id)} className="text-sm px-3 py-1.5 rounded-lg border">Delete</button></td>
                                 </tr>
                               ))}
                             </tbody>
@@ -758,6 +808,7 @@ export default function AfterschoolFilterPage() {
                 )}
               </div>
             )}
+            </div>
           </div>
         </div>
       </main>

@@ -100,6 +100,22 @@ export const IconClear = createIcon(
   <path d="M6 6l12 12M18 6L6 18" />
 );
 
+export const IconMenu = createIcon(
+  <>
+    <path d="M4 6h16" />
+    <path d="M4 12h16" />
+    <path d="M4 18h16" />
+  </>
+);
+
+export const IconChevronLeft = createIcon(
+  <path d="M14 6l-6 6 6 6" />
+);
+
+export const IconChevronRight = createIcon(
+  <path d="M10 6l6 6-6 6" />
+);
+
 const icons = {
   IconHome,
   IconFilter,
@@ -113,5 +129,8 @@ const icons = {
   IconTag,
   IconSort,
   IconClear,
+  IconMenu,
+  IconChevronLeft,
+  IconChevronRight,
 };
 export default icons;
