@@ -62,6 +62,8 @@ function parseName(raw: string): { first: string; last: string } | null {
 function exportFilteredTable() {
   const element = document.getElementById("results-table");
   if (!element) return;
+
+  // Printable window
   const w = window.open("", "", "width=900,height=650");
   if (!w) return;
   w.document.write("<html><head><title>Filtered Results</title><style>body{font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial} table{border-collapse:collapse;width:100%} th,td{border:1px solid #ddd;padding:8px;text-align:left} thead{background:#f3f4f6}</style></head><body>");
@@ -69,6 +71,151 @@ function exportFilteredTable() {
   w.document.write("</body></html>");
   w.document.close();
   w.print();
+
+  // Also build CSV for download with Abstences (empty) column
+  try {
+    const rows: string[][] = [];
+    const headerCells = Array.from(element.querySelectorAll('thead tr th')).map(th => th.textContent?.trim() || "");
+    // Append new header if not already present
+    const headers = headerCells.includes('Abstences') ? headerCells : [...headerCells, 'Abstences'];
+    rows.push(headers);
+    Array.from(element.querySelectorAll('tbody tr')).forEach(tr => {
+      const cols = Array.from(tr.querySelectorAll('td')).map(td => td.textContent?.trim().replace(/,/g,';') || "");
+      if (cols.length === 0) return; // skip empty state row
+      // Append blank for Abstences if needed
+      if (headers.length !== cols.length) cols.push("");
+      rows.push(cols);
+    });
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'lila_filtered_results.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    console.warn('CSV export failed', e);
+  }
+}
+
+// Export a weekly sheet for a specific grade/subclass currently selected in filter controls (grades/subclasses arrays could be multi, we pick single if only one selected)
+function exportWeekBySubgrade(students: Student[], activityColors: Record<string,string>, gradeFilter: Grade[] , subFilter: SubClass[]) {
+  // Determine single grade + subclass (if multiple selected, abort with alert)
+  const gSel = gradeFilter.length === 1 ? gradeFilter[0] : null;
+  const sSel = subFilter.length === 1 ? subFilter[0] : null;
+  if (!gSel || !sSel) { alert('Please filter to exactly one grade and one subclass first.'); return; }
+
+  // Collect afterschool activities with a day
+  const byDay: Record<Weekday, Array<{ student: Student; activity: Activity }>> = {
+    Monday: [], Tuesday: [], Wednesday: [], Thursday: [], Friday: []
+  };
+  students
+    .filter(s => s.grade === gSel && s.subClass === sSel)
+    .forEach(s => s.activities.filter(a => a.when === 'afterschool' && a.day).forEach(a => {
+      byDay[a.day as Weekday].push({ student: s, activity: a });
+    }));
+
+  // Open printable
+  const w = window.open('', '', 'width=1000,height=800');
+  if (!w) return;
+  w.document.write('<html><head><title>Week Export</title><style>body{font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;margin:16px} h2{margin-top:32px} table{border-collapse:collapse;width:100%;margin-top:8px} th,td{border:1px solid #ddd;padding:6px 8px;font-size:12px;text-align:left} thead{background:#f3f4f6} .day-block{page-break-inside:avoid;} .color-dot{display:inline-block;width:8px;height:8px;border-radius:9999px;border:1px solid #999;margin-right:4px;}</style></head><body>');
+  w.document.write(`<h1 style="font-size:20px;font-weight:600;">Afterschool Activities - ${gSel === 'K' ? 'K' : gSel}${sSel}</h1>`);
+  const order: Weekday[] = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+  order.forEach(day => {
+    const rows = byDay[day];
+    w.document.write(`<div class="day-block"><h2>${day}</h2>`);
+    if (rows.length === 0) {
+      w.document.write('<p style="color:#666;font-size:12px;">No activities.</p></div>');
+      return;
+    }
+    w.document.write('<table><thead><tr><th>Student</th><th>Activity</th><th>Absences</th></tr></thead><tbody>');
+    rows
+      .sort((a,b)=> fullName(a.student).localeCompare(fullName(b.student)) || (a.activity.name.localeCompare(b.activity.name)))
+      .forEach(r => {
+        const color = activityColors[r.activity.name] || '#e5e7eb';
+        w.document.write(`<tr><td>${fullName(r.student)}</td><td><span class="color-dot" style="background:${color};border-color:${color}"></span>${r.activity.name}</td><td></td></tr>`);
+      });
+    w.document.write('</tbody></table></div>');
+  });
+  w.document.write('</body></html>');
+  w.document.close();
+  w.print();
+
+  // Build CSV
+  try {
+    const csvRows: string[][] = [];
+    csvRows.push(['Day','Student','Activity','Absences']);
+    order.forEach(day => {
+      byDay[day]
+        .sort((a,b)=> fullName(a.student).localeCompare(fullName(b.student)) || a.activity.name.localeCompare(b.activity.name))
+        .forEach(r => csvRows.push([day, fullName(r.student), r.activity.name, '']));
+    });
+    const csv = csvRows.map(r=>r.map(v=> v.replace(/,/g,';')).join(',')).join('\n');
+    const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `week_${gSel === 'K' ? 'K' : gSel}${sSel}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch(e) { console.warn('Week CSV export failed', e); }
+}
+
+// Export all classes (every Grade x SubClass) into one document and one CSV
+function exportAllWeeksBySubgrade(students: Student[], activityColors: Record<string,string>) {
+  const gradesAll: Grade[] = ['K',1,2,3,4,5];
+  const subsAll: SubClass[] = ['A','B','C','D'];
+  const order: Weekday[] = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+
+  // Printable window
+  const w = window.open('', '', 'width=1100,height=850');
+  if (!w) return;
+  w.document.write('<html><head><title>All Classes - Week Export</title><style>body{font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;margin:16px} h1{font-size:22px;margin:8px 0 16px} h2{margin-top:24px} table{border-collapse:collapse;width:100%;margin-top:8px} th,td{border:1px solid #ddd;padding:6px 8px;font-size:12px;text-align:left} thead{background:#f3f4f6} .page{page-break-after:always} .day-block{page-break-inside:avoid;} .color-dot{display:inline-block;width:8px;height:8px;border-radius:9999px;border:1px solid #999;margin-right:4px;}</style></head><body>');
+  const csvRows: string[][] = [['Class','Day','Student','Activity','Absences']];
+
+  gradesAll.forEach(gSel => {
+    subsAll.forEach(sSel => {
+      const byDay: Record<Weekday, Array<{ student: Student; activity: Activity }>> = { Monday: [], Tuesday: [], Wednesday: [], Thursday: [], Friday: [] };
+      students
+        .filter(s => s.grade === gSel && s.subClass === sSel)
+        .forEach(s => s.activities.filter(a => a.when === 'afterschool' && a.day).forEach(a => {
+          byDay[a.day as Weekday].push({ student: s, activity: a });
+        }));
+
+      w.document.write(`<div class="page"><h1>Afterschool Activities - ${gSel === 'K' ? 'K' : gSel}${sSel}</h1>`);
+      order.forEach(day => {
+        const rows = byDay[day];
+        w.document.write(`<div class="day-block"><h2>${day}</h2>`);
+        if (rows.length === 0) { w.document.write('<p style="color:#666;font-size:12px;">No activities.</p></div>'); return; }
+        w.document.write('<table><thead><tr><th>Student</th><th>Activity</th><th>Absences</th></tr></thead><tbody>');
+        rows
+          .sort((a,b)=> fullName(a.student).localeCompare(fullName(b.student)) || a.activity.name.localeCompare(b.activity.name))
+          .forEach(r => {
+            const color = activityColors[r.activity.name] || '#e5e7eb';
+            w.document.write(`<tr><td>${fullName(r.student)}</td><td><span class="color-dot" style="background:${color};border-color:${color}"></span>${r.activity.name}</td><td></td></tr>`);
+            csvRows.push([`${gSel === 'K' ? 'K' : gSel}${sSel}`, day, fullName(r.student), r.activity.name, '']);
+          });
+        w.document.write('</tbody></table></div>');
+      });
+      w.document.write('</div>');
+    });
+  });
+  w.document.write('</body></html>');
+  w.document.close();
+  w.print();
+
+  // Download combined CSV
+  try {
+    const csv = csvRows.map(r=> r.map(v=> v.replace(/,/g,';')).join(',')).join('\n');
+    const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'all_classes_week.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch(e) { console.warn('All-classes CSV export failed', e); }
 }
 
 function downloadImportTemplate() {
@@ -80,6 +227,25 @@ function downloadImportTemplate() {
   const a = document.createElement("a");
   a.href = url;
   a.download = "lila_import_template.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadActivitiesTemplate() {
+  const headers = ["Activity Name", "When", "Day", "Color"]; // CSV columns
+  const sampleRows = [
+    ["Lego Builders", "afterschool", "Monday", "#6366F1"],
+    ["Soccer Club", "afterschool", "Wednesday", "#10B981"],
+    ["Drama Crew", "afterschool", "Thursday", "#F59E0B"],
+    ["Reading Buddies", "in-class", "", "#8B5CF6"],
+    ["Math Lab", "lunch", "", "#EF4444"]
+  ];
+  const csv = [headers.join(","), ...sampleRows.map(row => row.join(","))].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "lila_activities_template.csv";
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -509,19 +675,18 @@ export default function AfterschoolFilterPage() {
                   <table className="min-w-full text-sm">
                     <thead className="bg-gray-100">
                       <tr>
-      <th className="text-left font-semibold px-3 md:px-4 py-3">ID</th>
       <th className="text-left font-semibold px-3 md:px-4 py-3">Name</th>
       <th className="text-left font-semibold px-3 md:px-4 py-3">Grade</th>
       <th className="text-left font-semibold px-3 md:px-4 py-3">Sub</th>
-      <th className="text-left font-semibold px-3 md:px-4 py-3">Afterschool Activity</th>
-      <th className="text-left font-semibold px-3 md:px-4 py-3">Day</th>
+  <th className="text-left font-semibold px-3 md:px-4 py-3">Afterschool Activity</th>
+  <th className="text-left font-semibold px-3 md:px-4 py-3">Day</th>
+  <th className="text-left font-semibold px-3 md:px-4 py-3">Abstences</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filtered.flatMap((s) => (
                         s.activities.map((a, idx) => (
                           <tr key={`${s.id}-${idx}`} className="border-t border-gray-200">
-                            <td className="px-3 md:px-4 py-2 whitespace-nowrap">{s.id}</td>
                             <td className="px-3 md:px-4 py-2 whitespace-nowrap">{fullName(s)}</td>
                             <td className="px-3 md:px-4 py-2">{s.grade === "K" ? "K" : s.grade}</td>
                             <td className="px-3 md:px-4 py-2">{s.subClass}</td>
@@ -532,6 +697,7 @@ export default function AfterschoolFilterPage() {
                               </span>
                             </td>
                             <td className="px-3 md:px-4 py-2">{a.day ?? "—"}</td>
+                            <td className="px-3 md:px-4 py-2 whitespace-nowrap"></td>
                           </tr>
                         ))
                       ))}
@@ -544,8 +710,10 @@ export default function AfterschoolFilterPage() {
                   </table>
                 </section>
 
-                <div className="flex justify-end mt-4">
-                  <button onClick={exportFilteredTable} className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700">Download / Print</button>
+                <div className="flex flex-col sm:flex-row gap-2 justify-end mt-4">
+                  <button onClick={exportFilteredTable} className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700">Download / Print (Current)</button>
+                  <button onClick={()=>exportWeekBySubgrade(students, activityColors, grades, subclasses)} className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">Week Export (Per Day)</button>
+                  <button onClick={()=>exportAllWeeksBySubgrade(students, activityColors)} className="px-4 py-2 rounded-lg bg-purple-600 text-white text-sm font-medium hover:bg-purple-700">Week Export (All Classes)</button>
                 </div>
               </div>
             )}
@@ -603,55 +771,56 @@ export default function AfterschoolFilterPage() {
                         <h2 className="text-lg font-semibold">Students</h2>
                         <div className="flex items-center gap-2">
                           <input id="snapshot-file" type="file" accept="application/json" onChange={handleImportSnapshot} className="hidden" />
+                          <button onClick={downloadActivitiesTemplate} className="px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50">Download Template</button>
                           <button onClick={downloadSnapshot} className="px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50">Save data</button>
                           <label htmlFor="snapshot-file" className="px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50 cursor-pointer">Load data</label>
                           <button onClick={clearAllStudents} className="px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50">Clear all students</button>
                         </div>
                       </div>
           <div className="overflow-auto rounded-xl border border-gray-200 max-h-[32rem]">
-                        <table className="w-full text-sm">
-                          <thead className="bg-gray-100 sticky top-0">
-                            <tr>
-            <th className="text-left px-2 md:px-3 py-2">Student</th>
-            <th className="text-left px-2 md:px-3 py-2">Grade/Sub</th>
-            <th className="text-left px-2 md:px-3 py-2">Current afterschool</th>
-            <th className="text-left px-2 md:px-3 py-2">Action</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {students
-                              .filter(s=> (mGrade==="" || s.grade===mGrade) && (mSub==="" || s.subClass===mSub))
-                              .filter(s=>{ const q=mSearch.trim().toLowerCase(); return q ? (`${s.first} ${s.last}`.toLowerCase().includes(q) || s.id.toLowerCase().includes(q)) : true; })
-                              .sort((a,b)=> (a.grade===b.grade? a.subClass.localeCompare(b.subClass): (a.grade==="K"?0:a.grade) - (b.grade==="K"?0:b.grade)) || fullName(a).localeCompare(fullName(b)))
-                              .map(s=> (
-                                <tr key={s.id} className="border-t border-gray-200">
-                                  <td className="px-2 md:px-3 py-2 whitespace-nowrap">{fullName(s)}</td>
-                                  <td className="px-2 md:px-3 py-2">{s.grade === "K" ? "K" : s.grade}/{s.subClass}</td>
-                                  <td className="px-2 md:px-3 py-2">
-                                    <div className="flex flex-wrap gap-2">
-                                      {s.activities.filter(a => a.when === "afterschool").map((a, idx) => (
-                                        <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 border text-xs">
-                                          <span className="inline-block w-2.5 h-2.5 rounded-full border" style={{ backgroundColor: activityColors[a.name] || '#e5e7eb', borderColor: activityColors[a.name] || '#e5e7eb' }} />
-                                          {a.name}{a.day ? `· ${a.day}` : ""}
-                                          <button className="ml-1 text-red-600" onClick={() => removeActivityFromStudent(s.id, a.name, a.day)}>×</button>
-                                        </span>
-                                      ))}
-                                      {s.activities.filter(a => a.when === "afterschool").length === 0 && (
-                                        <span className="text-xs text-gray-500">None</span>
-                                      )}
-                                    </div>
-                                  </td>
-                                  <td className="px-2 md:px-3 py-2">
-                                    <div className="flex items-center gap-2">
-                                      <button onClick={() => assignActivityToStudent(s.id)} className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm">Assign</button>
-                                      <button onClick={() => deleteStudent(s.id)} className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-sm">Delete</button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              ))}
-                          </tbody>
-                        </table>
-                      </div>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100 sticky top-0">
+                <tr>
+                  <th className="text-left px-3 md:px-4 py-2">Student</th>
+                  <th className="text-left px-3 md:px-4 py-2">Grade/Sub</th>
+                  <th className="text-left px-3 md:px-4 py-2">Afterschool Activities</th>
+                  <th className="text-left px-3 md:px-4 py-2">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {students
+                  .filter(s=> (mGrade==="" || s.grade===mGrade) && (mSub==="" || s.subClass===mSub))
+                  .filter(s=>{ const q=mSearch.trim().toLowerCase(); return q ? (`${s.first} ${s.last}`.toLowerCase().includes(q) || s.id.toLowerCase().includes(q)) : true; })
+                  .sort((a,b)=> (a.grade===b.grade? a.subClass.localeCompare(b.subClass): (a.grade==="K"?0:a.grade) - (b.grade==="K"?0:b.grade)) || fullName(a).localeCompare(fullName(b)))
+                  .map(s=> (
+                    <tr key={s.id} className="border-t border-gray-200">
+                      <td className="px-3 md:px-4 py-2 whitespace-nowrap">{fullName(s)}</td>
+                      <td className="px-3 md:px-4 py-2">{s.grade === "K" ? "K" : s.grade}/{s.subClass}</td>
+                      <td className="px-3 md:px-4 py-2">
+                        <div className="flex flex-wrap gap-2">
+                          {s.activities.filter(a => a.when === "afterschool").map((a, idx) => (
+                            <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 border text-xs">
+                              <span className="inline-block w-2.5 h-2.5 rounded-full border" style={{ backgroundColor: activityColors[a.name] || '#e5e7eb', borderColor: activityColors[a.name] || '#e5e7eb' }} />
+                              {a.name}{a.day ? `· ${a.day}` : ""}
+                              <button className="ml-1 text-red-600" onClick={() => removeActivityFromStudent(s.id, a.name, a.day)}>×</button>
+                            </span>
+                          ))}
+                          {s.activities.filter(a => a.when === "afterschool").length === 0 && (
+                            <span className="text-xs text-gray-500">None</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 md:px-4 py-2">
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => assignActivityToStudent(s.id)} className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm">Assign</button>
+                          <button onClick={() => deleteStudent(s.id)} className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-sm">Delete</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
                     </section>
                   </>
                 )}
@@ -712,45 +881,43 @@ export default function AfterschoolFilterPage() {
                           <table className="w-full text-sm">
                             <thead className="bg-gray-100 sticky top-0">
                               <tr>
-                                <th className="text-left px-2 md:px-3 py-2">First</th>
-                                <th className="text-left px-2 md:px-3 py-2">Last</th>
-                                <th className="text-left px-2 md:px-3 py-2">Grade</th>
-                                <th className="text-left px-2 md:px-3 py-2">Subclass</th>
-                                <th className="text-left px-2 md:px-3 py-2">Activity (type or pick)</th>
-                                <th className="text-left px-2 md:px-3 py-2">Day</th>
-                                <th className="text-left px-2 md:px-3 py-2">Remove</th>
+              <th className="text-left px-2 md:px-3 py-2">Student</th>
+              <th className="text-left px-2 md:px-3 py-2">Grade/Sub</th>
+              <th className="text-left px-2 md:px-3 py-2">Current afterschool</th>
+              <th className="text-left px-2 md:px-3 py-2">Action</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {rows.map(r => (
-                                <tr key={r.id} className="border-t border-gray-200">
-                                  <td className="px-2 md:px-3 py-2"><input value={r.first} onChange={e => updateRow(r.id, { first: e.target.value })} className="w-36 md:w-40 rounded border px-2 py-1" /></td>
-                                  <td className="px-2 md:px-3 py-2"><input value={r.last} onChange={e => updateRow(r.id, { last: e.target.value })} className="w-36 md:w-40 rounded border px-2 py-1" /></td>
-                                  <td className="px-3 py-2">
-                                    <select value={r.grade === undefined ? "" : r.grade === "" ? "" : String(r.grade)} onChange={e => { const v = e.target.value; if (v === "") updateRow(r.id, { grade: "" }); else if (v === "K") updateRow(r.id, { grade: "K" }); else updateRow(r.id, { grade: Number(v) as Grade }); }} className="rounded border px-2 py-1">
-                                      <option value="">—</option>
-                                      {gradeOptions.map(g => (<option key={String(g)} value={g === "K" ? "K" : String(g)}>{g === "K" ? "K" : g}</option>))}
-                                    </select>
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    <select value={r.sub || ""} onChange={e => updateRow(r.id, { sub: (e.target.value || "") as SubClass | "" })} className="rounded border px-2 py-1">
-                                      <option value="">—</option>
-                                      {subclassOptions.map(sc => (<option key={sc} value={sc}>{sc}</option>))}
-                                    </select>
-                                  </td>
-                                  <td className="px-2 md:px-3 py-2">
-                                    <input list="activities-suggest" value={r.activity} onChange={e => updateRow(r.id, { activity: e.target.value })} placeholder="(optional)" className="w-48 md:w-56 rounded border px-2 py-1" />
-                                    <div className="text-xs text-gray-500 mt-1">Leave blank if no afterschool.</div>
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    <select value={r.day} onChange={e => updateRow(r.id, { day: e.target.value as Weekday | "" })} className="rounded border px-2 py-1">
-                                      <option value="">—</option>
-                                      {dayOptions.map(d => (<option key={d} value={d}>{d}</option>))}
-                                    </select>
-                                  </td>
-                                  <td className="px-2 md:px-3 py-2"><button onClick={() => deleteRow(r.id)} className="text-sm px-3 py-1.5 rounded-lg border">Delete</button></td>
-                                </tr>
-                              ))}
+                              {students
+                                .filter(s=> (mGrade==="" || s.grade===mGrade) && (mSub==="" || s.subClass===mSub))
+                                .filter(s=>{ const q=mSearch.trim().toLowerCase(); return q ? (`${s.first} ${s.last}`.toLowerCase().includes(q) || s.id.toLowerCase().includes(q)) : true; })
+                                .sort((a,b)=> (a.grade===b.grade? a.subClass.localeCompare(b.subClass): (a.grade==="K"?0:a.grade) - (b.grade==="K"?0:b.grade)) || fullName(a).localeCompare(fullName(b)))
+                                .map(s=> (
+                                  <tr key={s.id} className="border-t border-gray-200">
+                                    <td className="px-2 md:px-3 py-2 whitespace-nowrap">{fullName(s)}</td>
+                                    <td className="px-2 md:px-3 py-2">{s.grade === "K" ? "K" : s.grade}/{s.subClass}</td>
+                                    <td className="px-2 md:px-3 py-2">
+                                      <div className="flex flex-wrap gap-2">
+                                        {s.activities.filter(a => a.when === "afterschool").map((a, idx) => (
+                                          <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 border text-xs">
+                                            <span className="inline-block w-2.5 h-2.5 rounded-full border" style={{ backgroundColor: activityColors[a.name] || '#e5e7eb', borderColor: activityColors[a.name] || '#e5e7eb' }} />
+                                            {a.name}{a.day ? `· ${a.day}` : ""}
+                                            <button className="ml-1 text-red-600" onClick={() => removeActivityFromStudent(s.id, a.name, a.day)}>×</button>
+                                          </span>
+                                        ))}
+                                        {s.activities.filter(a => a.when === "afterschool").length === 0 && (
+                                          <span className="text-xs text-gray-500">None</span>
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td className="px-2 md:px-3 py-2">
+                                      <div className="flex items-center gap-2">
+                                        <button onClick={() => assignActivityToStudent(s.id)} className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm">Assign</button>
+                                        <button onClick={() => deleteStudent(s.id)} className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-sm">Delete</button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))}
                             </tbody>
                           </table>
                         </div>
