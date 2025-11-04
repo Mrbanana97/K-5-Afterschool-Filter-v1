@@ -30,8 +30,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="bg-gray-50">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased flex justify-center items-start min-h-screen bg-gray-50 text-gray-900`}>
-        {children}
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-gray-50 text-gray-900 overflow-x-hidden`}>
+        <div className="w-full min-h-screen">
+          {children}
+        </div>
       </body>
     </html>
   );

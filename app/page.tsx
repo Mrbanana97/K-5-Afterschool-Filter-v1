@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Sidebar from "./components/Sidebar";
-import { IconCalendar, IconFilter, IconSearch, IconSort, IconMenu } from "./components/icons";
+import { IconCalendar, IconFilter, IconSearch, IconSort, IconMenu, IconActivity } from "./components/icons";
 
 // Types
 export type Grade = "K" | 1 | 2 | 3 | 4 | 5;
@@ -489,22 +489,23 @@ export default function AfterschoolFilterPage() {
     setRows([]); setNamesText(""); alert("Class imported. You can now see them in Filter & Print.");
   }
 
-  function updateRow(id: string, patch: Partial<ImportRow>) { setRows(prev=>prev.map(r=> r.id===id ? { ...r, ...patch } : r)); }
-  function deleteRow(id: string) { setRows(prev=>prev.filter(r=> r.id!==id)); }
-
   return (
     <>
-      <main className="min-h-screen bg-gray-50 text-gray-900">
+      <main className="min-h-screen bg-gray-50 text-gray-900 w-full overflow-x-hidden">
         {/* Mobile top bar */}
-        <div className="md:hidden sticky top-0 z-30 bg-gray-50/90 backdrop-blur border-b border-gray-200">
-          <div className="max-w-[1200px] mx-auto px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <button aria-label="Open menu" onClick={() => setMobileMenuOpen(true)} className="p-2 rounded-lg border bg-white">
-                <IconMenu />
+        <div className="md:hidden sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
+          <div className="w-full px-3 sm:px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <button 
+                aria-label="Open menu" 
+                onClick={() => setMobileMenuOpen(true)} 
+                className="p-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 active:bg-gray-100 transition-colors min-h-[44px] min-w-[44px] touch-manipulation shrink-0"
+              >
+                <IconMenu size={20} />
               </button>
-              <div className="flex items-center gap-2">
-                <Image src="/LILA-logo (1).svg" alt="LILA" width={32} height={32} className="h-8 w-8" />
-                <span className="font-semibold">LILA Afterschool</span>
+              <div className="flex items-center gap-2 min-w-0">
+                <Image src="/LILA-logo (1).svg" alt="LILA" width={32} height={32} className="h-7 w-7 sm:h-8 sm:w-8 shrink-0" />
+                <span className="font-semibold text-sm sm:text-base truncate">LILA Afterschool</span>
               </div>
             </div>
           </div>
@@ -512,10 +513,13 @@ export default function AfterschoolFilterPage() {
 
         {/* Page title header (desktop) */}
         <div className="hidden md:block">
-          <div className="max-w-[1200px] mx-auto px-4 pt-6">
-            <div className="flex items-center gap-3">
-              <Image src="/LILA-logo (1).svg" alt="LILA" width={64} height={64} className="h-12 w-12 md:h-16 md:w-16" />
-              <h1 className="text-xl md:text-2xl font-semibold">LILA After school Filter</h1>
+          <div className="w-full px-4 lg:px-6 pt-6 pb-2">
+            <div className="flex items-center gap-4">
+              <Image src="/LILA-logo (1).svg" alt="LILA" width={64} height={64} className="h-14 w-14 lg:h-16 lg:w-16 shrink-0" />
+              <div className="min-w-0">
+                <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-gray-900">LILA After school Filter</h1>
+                <p className="text-sm text-gray-600 mt-1">Manage K-5 afterschool activities and student assignments</p>
+              </div>
             </div>
           </div>
         </div>
@@ -523,23 +527,36 @@ export default function AfterschoolFilterPage() {
         {/* Mobile slide-over sidebar */}
         {mobileMenuOpen && (
           <div className="md:hidden fixed inset-0 z-40">
-            <div className="absolute inset-0 bg-black/40" onClick={() => setMobileMenuOpen(false)} />
-            <div className="absolute left-0 top-0 bottom-0 w-72 max-w-[85%] bg-[#0f1217] p-3 shadow-xl">
-              <div className="flex items-center justify-between mb-2 text-gray-100">
-                <div className="font-semibold">Menu</div>
-                <button className="px-2 py-1 rounded border border-white/10 bg-white/5" onClick={() => setMobileMenuOpen(false)}>Close</button>
+            <div 
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" 
+              onClick={() => setMobileMenuOpen(false)}
+              aria-hidden="true"
+            />
+            <div className="absolute left-0 top-0 bottom-0 w-72 max-w-[85vw] bg-[#0f1217] shadow-2xl transform transition-transform">
+              <div className="flex flex-col h-full p-4">
+                <div className="flex items-center justify-between mb-4 text-gray-100 pb-3 border-b border-white/10">
+                  <div className="font-semibold text-lg">Navigation</div>
+                  <button 
+                    className="px-3 py-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-sm transition-colors min-h-[44px] touch-manipulation" 
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Close
+                  </button>
+                </div>
+                <div className="flex-1 overflow-auto">
+                  <Sidebar
+                    current={view}
+                    onSelect={(v)=>{ handleChangeView(v); setMobileMenuOpen(false); }}
+                    collapsed={false}
+                  />
+                </div>
               </div>
-              <Sidebar
-                current={view}
-                onSelect={(v)=>{ handleChangeView(v); setMobileMenuOpen(false); }}
-                collapsed={false}
-              />
             </div>
           </div>
         )}
 
         {/* Flex layout: sidebar left, content right */}
-        <div className="max-w-[1200px] mx-auto px-4 py-6 w-full flex gap-6 items-start">
+        <div className="w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-6 flex gap-4 lg:gap-6 items-start">
           {/* Sidebar column (desktop) */}
           <div className="hidden md:block shrink-0">
             <Sidebar
@@ -551,214 +568,323 @@ export default function AfterschoolFilterPage() {
           </div>
 
           {/* Content column */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 w-full">
             <div className={`transition-opacity duration-200 ${fadeClass}`}>
             {view === "filter" && (
-              <div className="bg-white border border-gray-200 rounded-2xl p-4 md:p-6 shadow flex flex-col min-h-[calc(100dvh-8rem)]">
+              <div className="bg-white border border-gray-200 rounded-2xl p-3 sm:p-4 md:p-6 shadow flex flex-col min-h-[calc(100dvh-10rem)]">
                 {/* Filter toolbar */}
-                <div className="flex flex-wrap gap-2 items-center mb-4 relative">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3 items-stretch sm:items-center mb-4 relative">
                   {/* Search (moved here from top header) */}
-                  <div className="relative w-full md:w-auto md:min-w-[280px]">
-                    <IconSearch className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                  <div className="relative w-full sm:flex-1 sm:min-w-[240px] sm:max-w-sm">
+                    <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                     <input
                       value={query}
                       onChange={(e)=>setQuery(e.target.value)}
                       placeholder="Search by name or ID…"
-                      className="w-full md:w-72 pl-9 pr-3 py-2 rounded-full bg-white text-gray-900 border border-gray-300 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full pl-9 pr-3 py-2.5 rounded-lg sm:rounded-full bg-white text-gray-900 border border-gray-300 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
                     />
                   </div>
+                  
+                  {/* Filter buttons row */}
+                  <div className="flex flex-wrap gap-2">
                   {/* Grade */}
                   <div className="relative">
-                    <button onClick={()=>setOpenPopover(openPopover==='grade'?null:'grade')} className="px-3 py-1.5 rounded-full bg-white text-gray-900 text-sm flex items-center gap-2 border border-gray-300 hover:border-gray-400">
-                      <IconFilter /> Grade
+                    <button 
+                      onClick={()=>setOpenPopover(openPopover==='grade'?null:'grade')} 
+                      className="px-3 sm:px-4 py-2.5 rounded-lg sm:rounded-full bg-white text-gray-900 text-sm flex items-center gap-2 border border-gray-300 hover:border-gray-400 hover:bg-gray-50 active:bg-gray-100 transition-colors min-h-[44px] touch-manipulation"
+                      aria-label="Filter by grade"
+                      aria-expanded={openPopover === 'grade'}
+                    >
+                      <IconFilter /> <span className="font-medium">Grade</span>
                     </button>
                     {openPopover==='grade' && (
-                      <div className="absolute z-20 mt-2 w-64 rounded-xl bg-white text-gray-900 shadow-lg p-3 border border-gray-200">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">Grades</span>
-                          <button className="text-sm text-blue-600" onClick={()=>{ setGrades(gradeOptions); }}>Clear</button>
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={()=>setOpenPopover(null)} />
+                        <div className="absolute left-0 sm:left-auto z-20 mt-2 w-full sm:w-72 rounded-xl bg-white text-gray-900 shadow-xl ring-1 ring-black ring-opacity-5 p-4 border border-gray-200">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-semibold">Filter by Grade</span>
+                            <button className="text-sm text-blue-600 hover:text-blue-700 font-medium min-h-[44px] px-2 touch-manipulation" onClick={()=>{ setGrades(gradeOptions); }}>Select All</button>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {gradeOptions.map(g => (
+                              <button 
+                                key={String(g)} 
+                                onClick={()=>setGrades(prev=>toggleMulti(prev, g))} 
+                                className={`px-3 py-2 rounded-lg border text-sm font-medium transition-all min-h-[44px] min-w-[44px] touch-manipulation ${grades.includes(g)?'bg-blue-600 text-white border-blue-600 shadow-sm':'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'}`}
+                                aria-pressed={grades.includes(g)}
+                              >{g}</button>
+                            ))}
+                          </div>
+                          <div className="text-right mt-4"><button className="text-sm font-medium text-gray-600 hover:text-gray-900 min-h-[44px] px-3 touch-manipulation" onClick={()=>setOpenPopover(null)}>Done</button></div>
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                          {gradeOptions.map(g => (
-                            <button key={String(g)} onClick={()=>setGrades(prev=>toggleMulti(prev, g))} className={`px-2 py-1 rounded-full border text-sm ${grades.includes(g)?'bg-blue-600 text-white border-blue-600':'bg-white text-gray-700 border-gray-300'}`}>{g}</button>
-                          ))}
-                        </div>
-                        <div className="text-right mt-3"><button className="text-sm" onClick={()=>setOpenPopover(null)}>Close</button></div>
-                      </div>
+                      </>
                     )}
                   </div>
 
                   {/* Subclass */}
                   <div className="relative">
-                    <button onClick={()=>setOpenPopover(openPopover==='sub'?null:'sub')} className="px-3 py-1.5 rounded-full bg-white text-gray-900 text-sm flex items-center gap-2 border border-gray-300 hover:border-gray-400">
-                      <IconFilter /> Subclass
+                    <button 
+                      onClick={()=>setOpenPopover(openPopover==='sub'?null:'sub')} 
+                      className="px-3 sm:px-4 py-2.5 rounded-lg sm:rounded-full bg-white text-gray-900 text-sm flex items-center gap-2 border border-gray-300 hover:border-gray-400 hover:bg-gray-50 active:bg-gray-100 transition-colors min-h-[44px] touch-manipulation"
+                      aria-label="Filter by subclass"
+                      aria-expanded={openPopover === 'sub'}
+                    >
+                      <IconFilter /> <span className="font-medium">Subclass</span>
                     </button>
                     {openPopover==='sub' && (
-                      <div className="absolute z-20 mt-2 w-56 rounded-xl bg-white text-gray-900 shadow-lg p-3 border border-gray-200">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">Subclasses</span>
-                          <button className="text-sm text-blue-600" onClick={()=>{ setSubclasses(["A","B","C","D"]); }}>Clear</button>
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={()=>setOpenPopover(null)} />
+                        <div className="absolute left-0 sm:left-auto z-20 mt-2 w-full sm:w-64 rounded-xl bg-white text-gray-900 shadow-xl ring-1 ring-black ring-opacity-5 p-4 border border-gray-200">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-semibold">Filter by Subclass</span>
+                            <button className="text-sm text-blue-600 hover:text-blue-700 font-medium min-h-[44px] px-2 touch-manipulation" onClick={()=>{ setSubclasses(["A","B","C","D"]); }}>Select All</button>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {subclassOptions.map(sc => (
+                              <button 
+                                key={sc} 
+                                onClick={()=>setSubclasses(prev=>toggleMulti(prev, sc))} 
+                                className={`px-3 py-2 rounded-lg border text-sm font-medium transition-all min-h-[44px] min-w-[44px] touch-manipulation ${subclasses.includes(sc)?'bg-blue-600 text-white border-blue-600 shadow-sm':'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'}`}
+                                aria-pressed={subclasses.includes(sc)}
+                              >{sc}</button>
+                            ))}
+                          </div>
+                          <div className="text-right mt-4"><button className="text-sm font-medium text-gray-600 hover:text-gray-900 min-h-[44px] px-3 touch-manipulation" onClick={()=>setOpenPopover(null)}>Done</button></div>
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                          {subclassOptions.map(sc => (
-                            <button key={sc} onClick={()=>setSubclasses(prev=>toggleMulti(prev, sc))} className={`px-2 py-1 rounded-full border text-sm ${subclasses.includes(sc)?'bg-blue-600 text-white border-blue-600':'bg-white text-gray-700 border-gray-300'}`}>{sc}</button>
-                          ))}
-                        </div>
-                        <div className="text-right mt-3"><button className="text-sm" onClick={()=>setOpenPopover(null)}>Close</button></div>
-                      </div>
+                      </>
                     )}
                   </div>
 
                   {/* Activity */}
                   <div className="relative">
-                    <button onClick={()=>setOpenPopover(openPopover==='activity'?null:'activity')} className="px-3 py-1.5 rounded-full bg-white text-gray-900 text-sm flex items-center gap-2 border border-gray-300 hover:border-gray-400">
-                      <IconFilter /> Activity
+                    <button 
+                      onClick={()=>setOpenPopover(openPopover==='activity'?null:'activity')} 
+                      className="px-3 sm:px-4 py-2.5 rounded-lg sm:rounded-full bg-white text-gray-900 text-sm flex items-center gap-2 border border-gray-300 hover:border-gray-400 hover:bg-gray-50 active:bg-gray-100 transition-colors min-h-[44px] touch-manipulation"
+                      aria-label="Filter by activity"
+                      aria-expanded={openPopover === 'activity'}
+                    >
+                      <IconFilter /> <span className="font-medium">Activity</span>
                     </button>
                     {openPopover==='activity' && (
-                      <div className="absolute z-20 mt-2 w-72 rounded-xl bg-white text-gray-900 shadow-lg p-3 border border-gray-200">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">Activity</span>
-                          <button className="text-sm text-blue-600" onClick={()=>{ setActivityName(""); }}>Clear</button>
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={()=>setOpenPopover(null)} />
+                        <div className="absolute left-0 sm:left-auto z-20 mt-2 w-full sm:w-80 rounded-xl bg-white text-gray-900 shadow-xl ring-1 ring-black ring-opacity-5 p-4 border border-gray-200">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-semibold">Filter by Activity</span>
+                            <button className="text-sm text-blue-600 hover:text-blue-700 font-medium min-h-[44px] px-2 touch-manipulation" onClick={()=>{ setActivityName(""); }}>Clear</button>
+                          </div>
+                          <select 
+                            value={activityName} 
+                            onChange={(e)=>setActivityName(e.target.value)} 
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
+                          >
+                            <option value="">All afterschool</option>
+                            {activitiesCatalog.map(a => <option key={a} value={a}>{a}</option>)}
+                          </select>
+                          <div className="text-right mt-4"><button className="text-sm font-medium text-gray-600 hover:text-gray-900 min-h-[44px] px-3 touch-manipulation" onClick={()=>setOpenPopover(null)}>Done</button></div>
                         </div>
-                        <select value={activityName} onChange={(e)=>setActivityName(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2">
-                          <option value="">All afterschool</option>
-                          {activitiesCatalog.map(a => <option key={a} value={a}>{a}</option>)}
-                        </select>
-                        <div className="text-right mt-3"><button className="text-sm" onClick={()=>setOpenPopover(null)}>Close</button></div>
-                      </div>
+                      </>
                     )}
                   </div>
 
                   {/* Day */}
                   <div className="relative">
-                    <button onClick={()=>setOpenPopover(openPopover==='day'?null:'day')} className="px-3 py-1.5 rounded-full bg-white text-gray-900 text-sm flex items-center gap-2 border border-gray-300 hover:border-gray-400">
-                      <IconCalendar /> Day
+                    <button 
+                      onClick={()=>setOpenPopover(openPopover==='day'?null:'day')} 
+                      className="px-3 sm:px-4 py-2.5 rounded-lg sm:rounded-full bg-white text-gray-900 text-sm flex items-center gap-2 border border-gray-300 hover:border-gray-400 hover:bg-gray-50 active:bg-gray-100 transition-colors min-h-[44px] touch-manipulation"
+                      aria-label="Filter by day"
+                      aria-expanded={openPopover === 'day'}
+                    >
+                      <IconCalendar /> <span className="font-medium">Day</span>
                     </button>
                     {openPopover==='day' && (
-                      <div className="absolute z-20 mt-2 w-56 rounded-xl bg-white text-gray-900 shadow-lg p-3 border border-gray-200">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">Day</span>
-                          <button className="text-sm text-blue-600" onClick={()=>{ setDay(""); }}>Clear</button>
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={()=>setOpenPopover(null)} />
+                        <div className="absolute left-0 sm:left-auto z-20 mt-2 w-full sm:w-64 rounded-xl bg-white text-gray-900 shadow-xl ring-1 ring-black ring-opacity-5 p-4 border border-gray-200">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-semibold">Filter by Day</span>
+                            <button className="text-sm text-blue-600 hover:text-blue-700 font-medium min-h-[44px] px-2 touch-manipulation" onClick={()=>{ setDay(""); }}>Clear</button>
+                          </div>
+                          <select 
+                            value={day} 
+                            onChange={(e)=>setDay(e.target.value as Weekday | "")} 
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
+                          >
+                            <option value="">All days</option>
+                            {dayOptions.map(d => <option key={d} value={d}>{d}</option>)}
+                          </select>
+                          <div className="text-right mt-4"><button className="text-sm font-medium text-gray-600 hover:text-gray-900 min-h-[44px] px-3 touch-manipulation" onClick={()=>setOpenPopover(null)}>Done</button></div>
                         </div>
-                        <select value={day} onChange={(e)=>setDay(e.target.value as Weekday | "")} className="w-full rounded-lg border border-gray-300 px-3 py-2">
-                          <option value="">All days</option>
-                          {dayOptions.map(d => <option key={d} value={d}>{d}</option>)}
-                        </select>
-                        <div className="text-right mt-3"><button className="text-sm" onClick={()=>setOpenPopover(null)}>Close</button></div>
-                      </div>
+                      </>
                     )}
                   </div>
 
                   {/* Sort */}
                   <div className="relative">
-                    <button onClick={()=>setOpenPopover(openPopover==='sort'?null:'sort')} className="px-3 py-1.5 rounded-full bg-white text-gray-900 text-sm flex items-center gap-2 border border-gray-300 hover:border-gray-400">
-                      <IconSort /> Sort
+                    <button 
+                      onClick={()=>setOpenPopover(openPopover==='sort'?null:'sort')} 
+                      className="px-3 sm:px-4 py-2.5 rounded-lg sm:rounded-full bg-white text-gray-900 text-sm flex items-center gap-2 border border-gray-300 hover:border-gray-400 hover:bg-gray-50 active:bg-gray-100 transition-colors min-h-[44px] touch-manipulation"
+                      aria-label="Sort results"
+                      aria-expanded={openPopover === 'sort'}
+                    >
+                      <IconSort /> <span className="font-medium">Sort</span>
                     </button>
                     {openPopover==='sort' && (
-                      <div className="absolute z-20 mt-2 w-56 rounded-xl bg-white text-gray-900 shadow-lg p-3 border border-gray-200">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">Sort by</span>
-                          <button className="text-sm text-blue-600" onClick={()=>{ setSortBy("name"); }}>Reset</button>
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={()=>setOpenPopover(null)} />
+                        <div className="absolute left-0 sm:left-auto z-20 mt-2 w-full sm:w-64 rounded-xl bg-white text-gray-900 shadow-xl ring-1 ring-black ring-opacity-5 p-4 border border-gray-200">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-semibold">Sort Results</span>
+                            <button className="text-sm text-blue-600 hover:text-blue-700 font-medium min-h-[44px] px-2 touch-manipulation" onClick={()=>{ setSortBy("name"); }}>Reset</button>
+                          </div>
+                          <select 
+                            value={sortBy} 
+                            onChange={(e)=>setSortBy(e.target.value as "name" | "grade" | "subClass")} 
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
+                          >
+                            <option value="name">Name</option>
+                            <option value="grade">Grade</option>
+                            <option value="subClass">SubClass</option>
+                          </select>
+                          <div className="text-right mt-4"><button className="text-sm font-medium text-gray-600 hover:text-gray-900 min-h-[44px] px-3 touch-manipulation" onClick={()=>setOpenPopover(null)}>Done</button></div>
                         </div>
-                        <select value={sortBy} onChange={(e)=>setSortBy(e.target.value as "name" | "grade" | "subClass")} className="w-full rounded-lg border border-gray-300 px-3 py-2">
-                          <option value="name">Name</option>
-                          <option value="grade">Grade</option>
-                          <option value="subClass">SubClass</option>
-                        </select>
-                        <div className="text-right mt-3"><button className="text-sm" onClick={()=>setOpenPopover(null)}>Close</button></div>
-                      </div>
+                      </>
                     )}
+                  </div>
                   </div>
                 </div>
                 {/* Results table */}
-                <section id="results-table" className="overflow-x-auto flex-1 rounded-xl border border-gray-200">
-                  <table className="min-w-full text-sm">
-                    <thead className="bg-gray-100">
-                      <tr>
-      <th className="text-left font-semibold px-3 md:px-4 py-3">Name</th>
-      <th className="text-left font-semibold px-3 md:px-4 py-3">Grade</th>
-      <th className="text-left font-semibold px-3 md:px-4 py-3">Sub</th>
-  <th className="text-left font-semibold px-3 md:px-4 py-3">Afterschool Activity</th>
-  <th className="text-left font-semibold px-3 md:px-4 py-3">Day</th>
-  <th className="text-left font-semibold px-3 md:px-4 py-3">Abstences</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filtered.flatMap((s) => (
-                        s.activities.map((a, idx) => (
-                          <tr key={`${s.id}-${idx}`} className="border-t border-gray-200">
-                            <td className="px-3 md:px-4 py-2 whitespace-nowrap">{fullName(s)}</td>
-                            <td className="px-3 md:px-4 py-2">{s.grade === "K" ? "K" : s.grade}</td>
-                            <td className="px-3 md:px-4 py-2">{s.subClass}</td>
-                            <td className="px-3 md:px-4 py-2">
-                              <span className="inline-flex items-center gap-2">
-                                <span className="inline-block w-2.5 h-2.5 rounded-full border" style={{ backgroundColor: activityColors[a.name] || '#e5e7eb', borderColor: activityColors[a.name] || '#e5e7eb' }} />
-                                {a.name}
-                              </span>
-                            </td>
-                            <td className="px-3 md:px-4 py-2">{a.day ?? "—"}</td>
-                            <td className="px-3 md:px-4 py-2 whitespace-nowrap"></td>
-                          </tr>
-                        ))
-                      ))}
-                      {filtered.length === 0 && (
+                <section className="flex-1 rounded-xl border border-gray-200 bg-white overflow-hidden">
+                  <div className="overflow-x-auto max-h-[calc(100vh-20rem)]" id="results-table">
+                    <table className="w-full text-xs sm:text-sm">
+                      <thead className="bg-gray-100 sticky top-0 z-10">
                         <tr>
-                          <td colSpan={6} className="px-4 py-12 text-center text-gray-500">No matches. Adjust filters above.</td>
+                          <th className="text-left font-semibold px-2 sm:px-3 md:px-4 py-3 min-w-[100px]">Name</th>
+                          <th className="text-left font-semibold px-2 sm:px-3 md:px-4 py-3 whitespace-nowrap w-16">Grade</th>
+                          <th className="text-left font-semibold px-2 sm:px-3 md:px-4 py-3 whitespace-nowrap w-12">Sub</th>
+                          <th className="text-left font-semibold px-2 sm:px-3 md:px-4 py-3 min-w-[150px]">Afterschool Activity</th>
+                          <th className="text-left font-semibold px-2 sm:px-3 md:px-4 py-3 whitespace-nowrap w-24">Day</th>
+                          <th className="text-left font-semibold px-2 sm:px-3 md:px-4 py-3 whitespace-nowrap w-24">Absences</th>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {filtered.flatMap((s) => (
+                          s.activities.map((a, idx) => (
+                            <tr key={`${s.id}-${idx}`} className="border-t border-gray-200 hover:bg-gray-50 transition-colors">
+                              <td className="px-2 sm:px-3 md:px-4 py-2.5 font-medium text-gray-900 break-words">{fullName(s)}</td>
+                              <td className="px-2 sm:px-3 md:px-4 py-2.5 text-center whitespace-nowrap">{s.grade === "K" ? "K" : s.grade}</td>
+                              <td className="px-2 sm:px-3 md:px-4 py-2.5 text-center whitespace-nowrap">{s.subClass}</td>
+                              <td className="px-2 sm:px-3 md:px-4 py-2.5">
+                                <span className="inline-flex items-center gap-1.5 sm:gap-2">
+                                  <span className="inline-block w-2.5 h-2.5 rounded-full border shrink-0" style={{ backgroundColor: activityColors[a.name] || '#e5e7eb', borderColor: activityColors[a.name] || '#e5e7eb' }} />
+                                  <span className="break-words">{a.name}</span>
+                                </span>
+                              </td>
+                              <td className="px-2 sm:px-3 md:px-4 py-2.5 whitespace-nowrap">{a.day ?? "—"}</td>
+                              <td className="px-2 sm:px-3 md:px-4 py-2.5 whitespace-nowrap"></td>
+                            </tr>
+                          ))
+                        ))}
+                        {filtered.length === 0 && (
+                          <tr>
+                            <td colSpan={6} className="px-4 py-16 text-center text-gray-500">
+                              <div className="flex flex-col items-center gap-3">
+                                <IconSearch size={32} className="text-gray-300" />
+                                <p className="text-sm">No matches found. Try adjusting your filters.</p>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </section>
 
-                <div className="flex flex-col sm:flex-row gap-2 justify-end mt-4">
-                  <button onClick={exportFilteredTable} className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700">Download / Print (Current)</button>
-                  <button onClick={()=>exportWeekBySubgrade(students, activityColors, grades, subclasses)} className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">Week Export (Per Day)</button>
-                  <button onClick={()=>exportAllWeeksBySubgrade(students, activityColors)} className="px-4 py-2 rounded-lg bg-purple-600 text-white text-sm font-medium hover:bg-purple-700">Week Export (All Classes)</button>
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-end mt-4 pt-4 border-t border-gray-200">
+                  <button 
+                    onClick={exportFilteredTable} 
+                    className="px-4 py-2.5 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 active:bg-green-800 transition-colors shadow-sm hover:shadow min-h-[44px] touch-manipulation"
+                  >
+                    Download / Print (Current)
+                  </button>
+                  <button 
+                    onClick={()=>exportWeekBySubgrade(students, activityColors, grades, subclasses)} 
+                    className="px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 active:bg-indigo-800 transition-colors shadow-sm hover:shadow min-h-[44px] touch-manipulation"
+                  >
+                    Week Export (Per Day)
+                  </button>
+                  <button 
+                    onClick={()=>exportAllWeeksBySubgrade(students, activityColors)} 
+                    className="px-4 py-2.5 rounded-lg bg-purple-600 text-white text-sm font-medium hover:bg-purple-700 active:bg-purple-800 transition-colors shadow-sm hover:shadow min-h-[44px] touch-manipulation"
+                  >
+                    Week Export (All Classes)
+                  </button>
                 </div>
               </div>
             )}
 
             {view !== "filter" && (
-              <div className="bg-white border border-gray-200 rounded-2xl p-4 md:p-6 text-sm text-gray-700 flex flex-col min-h-[calc(100dvh-8rem)]">
+              <div className="bg-white border border-gray-200 rounded-2xl p-3 sm:p-4 md:p-6 text-sm text-gray-700 flex flex-col min-h-[calc(100dvh-10rem)]">
                 {view === "manage" && (
                   <>
                     <header className="mb-6">
-                      <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Manage Activities</h1>
-                      <p className="text-sm text-gray-600 mt-1">Select an activity and day, filter the list, then assign.</p>
+                      <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Manage Activities</h1>
+                      <p className="text-sm text-gray-600 mt-2">Select an activity and day, filter the list, then assign.</p>
                     </header>
 
-                    <section className="bg-white border border-gray-200 rounded-2xl p-4 md:p-6 mb-6">
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end mb-3">
+                    <section className="bg-gray-50 border border-gray-200 rounded-2xl p-3 sm:p-4 md:p-6 mb-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-end mb-4">
                         <div>
-                          <label className="block text-sm font-medium mb-1">Search</label>
-                          <input value={mSearch} onChange={e=>setMSearch(e.target.value)} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2" placeholder="Name or ID…" />
+                          <label className="block text-sm font-medium mb-1.5 text-gray-700">Search</label>
+                          <input 
+                            value={mSearch} 
+                            onChange={e=>setMSearch(e.target.value)} 
+                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]" 
+                            placeholder="Name or ID…" 
+                          />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-1">Grade</label>
-                          <select value={mGrade} onChange={e=>{ const v = e.target.value; if (v === "") setMGrade(""); else if (v === "K") setMGrade("K"); else setMGrade(Number(v) as Grade); }} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2">
+                          <label className="block text-sm font-medium mb-1.5 text-gray-700">Grade</label>
+                          <select 
+                            value={mGrade} 
+                            onChange={e=>{ const v = e.target.value; if (v === "") setMGrade(""); else if (v === "K") setMGrade("K"); else setMGrade(Number(v) as Grade); }} 
+                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
+                          >
                             <option value="">All</option>
                             {gradeOptions.map(g => <option key={String(g)} value={g === "K" ? "K" : String(g)}>{g === "K" ? "K" : g}</option>)}
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-1">Subclass</label>
-                          <select value={mSub} onChange={e=>setMSub((e.target.value || "") as SubClass | "")} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2">
+                          <label className="block text-sm font-medium mb-1.5 text-gray-700">Subclass</label>
+                          <select 
+                            value={mSub} 
+                            onChange={e=>setMSub((e.target.value || "") as SubClass | "")} 
+                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
+                          >
                             <option value="">All</option>
                             {subclassOptions.map(sc => <option key={sc} value={sc}>{sc}</option>)}
                           </select>
                         </div>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-start">
                         <div>
-                          <label className="block text-sm font-medium mb-1">Activity</label>
-                          <select value={selectedActivity} onChange={e => setSelectedActivity(e.target.value)} className="w-full rounded-xl border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                          <label className="block text-sm font-medium mb-1.5 text-gray-700">Activity to Assign</label>
+                          <select 
+                            value={selectedActivity} 
+                            onChange={e => setSelectedActivity(e.target.value)} 
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
+                          >
                             <option value="">Select activity…</option>
                             {activitiesCatalog.map(a => (<option key={a} value={a}>{a}</option>))}
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-1">Day</label>
-                          <select value={selectedDay} onChange={e => setSelectedDay(e.target.value as Weekday | "")} className="w-full rounded-xl border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                          <label className="block text-sm font-medium mb-1.5 text-gray-700">Day (Optional)</label>
+                          <select 
+                            value={selectedDay} 
+                            onChange={e => setSelectedDay(e.target.value as Weekday | "")} 
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
+                          >
                             <option value="">Select day…</option>
                             {dayOptions.map(d => (<option key={d} value={d}>{d}</option>))}
                           </select>
@@ -766,61 +892,95 @@ export default function AfterschoolFilterPage() {
                       </div>
                     </section>
 
-                    <section className="bg-white rounded-2xl shadow p-4 md:p-6">
-                      <div className="flex items-center justify-between mb-3">
+                    <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-3 sm:p-4 md:p-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                         <h2 className="text-lg font-semibold">Students</h2>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <input id="snapshot-file" type="file" accept="application/json" onChange={handleImportSnapshot} className="hidden" />
-                          <button onClick={downloadActivitiesTemplate} className="px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50">Download Template</button>
-                          <button onClick={downloadSnapshot} className="px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50">Save data</button>
-                          <label htmlFor="snapshot-file" className="px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50 cursor-pointer">Load data</label>
-                          <button onClick={clearAllStudents} className="px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50">Clear all students</button>
+                          <button 
+                            onClick={downloadActivitiesTemplate} 
+                            className="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors min-h-[44px] touch-manipulation"
+                          >
+                            Download Template
+                          </button>
+                          <button 
+                            onClick={downloadSnapshot} 
+                            className="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors min-h-[44px] touch-manipulation"
+                          >
+                            Save data
+                          </button>
+                          <label 
+                            htmlFor="snapshot-file" 
+                            className="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 cursor-pointer transition-colors min-h-[44px] flex items-center touch-manipulation"
+                          >
+                            Load data
+                          </label>
+                          <button 
+                            onClick={clearAllStudents} 
+                            className="px-3 py-2 rounded-lg border border-red-300 text-sm text-red-600 hover:bg-red-50 transition-colors min-h-[44px] touch-manipulation"
+                          >
+                            Clear all students
+                          </button>
                         </div>
                       </div>
-          <div className="overflow-auto rounded-xl border border-gray-200 max-h-[32rem]">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-100 sticky top-0">
-                <tr>
-                  <th className="text-left px-3 md:px-4 py-2">Student</th>
-                  <th className="text-left px-3 md:px-4 py-2">Grade/Sub</th>
-                  <th className="text-left px-3 md:px-4 py-2">Afterschool Activities</th>
-                  <th className="text-left px-3 md:px-4 py-2">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {students
-                  .filter(s=> (mGrade==="" || s.grade===mGrade) && (mSub==="" || s.subClass===mSub))
-                  .filter(s=>{ const q=mSearch.trim().toLowerCase(); return q ? (`${s.first} ${s.last}`.toLowerCase().includes(q) || s.id.toLowerCase().includes(q)) : true; })
-                  .sort((a,b)=> (a.grade===b.grade? a.subClass.localeCompare(b.subClass): (a.grade==="K"?0:a.grade) - (b.grade==="K"?0:b.grade)) || fullName(a).localeCompare(fullName(b)))
-                  .map(s=> (
-                    <tr key={s.id} className="border-t border-gray-200">
-                      <td className="px-3 md:px-4 py-2 whitespace-nowrap">{fullName(s)}</td>
-                      <td className="px-3 md:px-4 py-2">{s.grade === "K" ? "K" : s.grade}/{s.subClass}</td>
-                      <td className="px-3 md:px-4 py-2">
-                        <div className="flex flex-wrap gap-2">
-                          {s.activities.filter(a => a.when === "afterschool").map((a, idx) => (
-                            <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 border text-xs">
-                              <span className="inline-block w-2.5 h-2.5 rounded-full border" style={{ backgroundColor: activityColors[a.name] || '#e5e7eb', borderColor: activityColors[a.name] || '#e5e7eb' }} />
-                              {a.name}{a.day ? `· ${a.day}` : ""}
-                              <button className="ml-1 text-red-600" onClick={() => removeActivityFromStudent(s.id, a.name, a.day)}>×</button>
-                            </span>
-                          ))}
-                          {s.activities.filter(a => a.when === "afterschool").length === 0 && (
-                            <span className="text-xs text-gray-500">None</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-3 md:px-4 py-2">
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => assignActivityToStudent(s.id)} className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm">Assign</button>
-                          <button onClick={() => deleteStudent(s.id)} className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-sm">Delete</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
+                      <div className="overflow-auto rounded-xl border border-gray-200 max-h-[32rem]">
+                        <table className="w-full text-xs sm:text-sm">
+                          <thead className="bg-gray-100 sticky top-0 z-10">
+                            <tr>
+                              <th className="text-left px-2 sm:px-3 md:px-4 py-3 font-semibold min-w-[100px]">Student</th>
+                              <th className="text-left px-2 sm:px-3 md:px-4 py-3 font-semibold whitespace-nowrap w-20">Grade/Sub</th>
+                              <th className="text-left px-2 sm:px-3 md:px-4 py-3 font-semibold min-w-[180px]">Afterschool Activities</th>
+                              <th className="text-left px-2 sm:px-3 md:px-4 py-3 font-semibold min-w-[140px]">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {students
+                              .filter(s=> (mGrade==="" || s.grade===mGrade) && (mSub==="" || s.subClass===mSub))
+                              .filter(s=>{ const q=mSearch.trim().toLowerCase(); return q ? (`${s.first} ${s.last}`.toLowerCase().includes(q) || s.id.toLowerCase().includes(q)) : true; })
+                              .sort((a,b)=> (a.grade===b.grade? a.subClass.localeCompare(b.subClass): (a.grade==="K"?0:a.grade) - (b.grade==="K"?0:b.grade)) || fullName(a).localeCompare(fullName(b)))
+                              .map(s=> (
+                                <tr key={s.id} className="border-t border-gray-200 hover:bg-gray-50 transition-colors">
+                                  <td className="px-2 sm:px-3 md:px-4 py-3 font-medium break-words">{fullName(s)}</td>
+                                  <td className="px-2 sm:px-3 md:px-4 py-3 text-center whitespace-nowrap">{s.grade === "K" ? "K" : s.grade}/{s.subClass}</td>
+                                  <td className="px-2 sm:px-3 md:px-4 py-3">
+                                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                                      {s.activities.filter(a => a.when === "afterschool").map((a, idx) => (
+                                        <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 border text-xs">
+                                          <span className="inline-block w-2.5 h-2.5 rounded-full border shrink-0" style={{ backgroundColor: activityColors[a.name] || '#e5e7eb', borderColor: activityColors[a.name] || '#e5e7eb' }} />
+                                          <span className="break-words">{a.name}</span>{a.day ? ` · ${a.day}` : ""}
+                                          <button 
+                                            className="ml-1 text-red-600 hover:text-red-800 font-bold min-w-[20px] min-h-[20px] flex items-center justify-center touch-manipulation" 
+                                            onClick={() => removeActivityFromStudent(s.id, a.name, a.day)}
+                                            aria-label={`Remove ${a.name}`}
+                                          >×</button>
+                                        </span>
+                                      ))}
+                                      {s.activities.filter(a => a.when === "afterschool").length === 0 && (
+                                        <span className="text-xs text-gray-500 italic">None</span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-2 sm:px-3 md:px-4 py-3">
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                                      <button 
+                                        onClick={() => assignActivityToStudent(s.id)} 
+                                        className="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs sm:text-sm font-medium hover:bg-blue-700 active:bg-blue-800 transition-colors min-h-[40px] touch-manipulation whitespace-nowrap"
+                                      >
+                                        Assign
+                                      </button>
+                                      <button 
+                                        onClick={() => deleteStudent(s.id)} 
+                                        className="px-3 py-2 rounded-lg bg-red-600 text-white text-xs sm:text-sm font-medium hover:bg-red-700 active:bg-red-800 transition-colors min-h-[40px] touch-manipulation whitespace-nowrap"
+                                      >
+                                        Delete
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </section>
                   </>
                 )}
@@ -828,48 +988,81 @@ export default function AfterschoolFilterPage() {
                 {view === "import" && (
                   <>
                     <header className="mb-6">
-                      <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Import a Class</h1>
-                      <p className="text-sm text-gray-600 mt-1">Paste students for a single class (e.g., <span className="font-medium">KA</span>, <span className="font-medium">KB</span>, <span className="font-medium">1A</span>) or upload a CSV with columns <span className="font-medium">Last Name, First Name, Grade, Subclass</span>. Then assign activities per student before adding.</p>
+                      <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Import a Class</h1>
+                      <p className="text-sm text-gray-600 mt-2">Paste students for a single class (e.g., <span className="font-medium">KA</span>, <span className="font-medium">KB</span>, <span className="font-medium">1A</span>) or upload a CSV with columns <span className="font-medium">Last Name, First Name, Grade, Subclass</span>. Then assign activities per student before adding.</p>
                     </header>
 
-                    <section className="bg-white rounded-2xl shadow p-4 md:p-6 mb-6 border border-gray-200">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                    <section className="bg-gray-50 rounded-2xl shadow-sm border border-gray-200 p-3 sm:p-4 md:p-6 mb-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-start">
                         <div>
-                          <label className="block text-sm font-medium mb-1">Grade</label>
-                          <select value={importGrade === "" ? "" : String(importGrade)} onChange={e => { const v = e.target.value; if (v === "") setImportGrade(""); else if (v === "K") setImportGrade("K"); else setImportGrade(Number(v) as Grade); }} className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                          <label className="block text-sm font-medium mb-1.5 text-gray-700">Grade</label>
+                          <select 
+                            value={importGrade === "" ? "" : String(importGrade)} 
+                            onChange={e => { const v = e.target.value; if (v === "") setImportGrade(""); else if (v === "K") setImportGrade("K"); else setImportGrade(Number(v) as Grade); }} 
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
+                          >
                             <option value="">Select…</option>
                             {gradeOptions.map(g => (<option key={String(g)} value={g === "K" ? "K" : String(g)}>{g === "K" ? "K" : g}</option>))}
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-1">Subclass</label>
-                          <select value={importSub || ""} onChange={e => setImportSub(e.target.value as SubClass)} className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                          <label className="block text-sm font-medium mb-1.5 text-gray-700">Subclass</label>
+                          <select 
+                            value={importSub || ""} 
+                            onChange={e => setImportSub(e.target.value as SubClass)} 
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
+                          >
                             <option value="">Select…</option>
                             {subclassOptions.map(sc => (<option key={sc} value={sc}>{sc}</option>))}
                           </select>
                         </div>
-                        <div className="md:col-span-2">
-                          <label className="block text-sm font-medium mb-1">Upload CSV (Last Name, First Name, Grade, Subclass)</label>
-                          <input type="file" accept=".csv" onChange={handleCSVUpload} className="w-full rounded-xl border border-gray-300 px-3 py-2 bg-white" />
-                          <p className="text-xs text-gray-500 mt-1">Tip: Use the &quot;Download template (CSV)&quot; button to get a sample file.</p>
+                        <div className="sm:col-span-2">
+                          <label className="block text-sm font-medium mb-1.5 text-gray-700">Upload CSV (Last Name, First Name, Grade, Subclass)</label>
+                          <input 
+                            type="file" 
+                            accept=".csv" 
+                            onChange={handleCSVUpload} 
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 bg-white text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 min-h-[44px]" 
+                          />
+                          <p className="text-xs text-gray-500 mt-2">Tip: Use the &quot;Download template (CSV)&quot; button to get a sample file.</p>
                         </div>
-                        <div className="md:col-span-2">
-                          <label className="block text-sm font-medium mb-1">Paste names (one per line or comma-separated)</label>
-                          <textarea value={namesText} onChange={e => setNamesText(e.target.value)} className="w-full h-48 border rounded-xl p-3 font-mono text-sm resize-y border-gray-300" placeholder={`Ava Nguyen\nBen Ortiz\nChloe Singh`}></textarea>
+                        <div className="sm:col-span-2">
+                          <label className="block text-sm font-medium mb-1.5 text-gray-700">Paste names (one per line or comma-separated)</label>
+                          <textarea 
+                            value={namesText} 
+                            onChange={e => setNamesText(e.target.value)} 
+                            className="w-full min-h-[200px] border rounded-lg p-3 font-mono text-sm resize-y border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                            placeholder={`Ava Nguyen\nBen Ortiz\nChloe Singh`}
+                          ></textarea>
                         </div>
                       </div>
-                      <div className="flex justify-end gap-2 mt-3">
-                        <button onClick={downloadImportTemplate} className="px-4 py-2 rounded-lg border text-sm">Download template (CSV)</button>
-                        <button onClick={previewClass} className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">Preview class</button>
+                      <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 mt-4">
+                        <button 
+                          onClick={downloadImportTemplate} 
+                          className="px-4 py-2.5 rounded-lg border border-gray-300 text-sm font-medium hover:bg-gray-50 transition-colors min-h-[44px] touch-manipulation"
+                        >
+                          Download template (CSV)
+                        </button>
+                        <button 
+                          onClick={previewClass} 
+                          className="px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 active:bg-indigo-800 transition-colors shadow-sm hover:shadow min-h-[44px] touch-manipulation"
+                        >
+                          Preview class
+                        </button>
                       </div>
                     </section>
 
                     {rows.length > 0 && (
-                      <section className="bg-white rounded-2xl shadow p-4 md:p-6 border border-gray-200">
-                        <div className="flex items-center justify-between mb-3">
+                      <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-3 sm:p-4 md:p-6">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
                           <h2 className="text-lg font-semibold">Set activities for each student</h2>
-                          <div className="flex items-center gap-3">
-                            <button onClick={() => setRows([])} className="text-sm px-3 py-1.5 rounded-lg border">Clear list</button>
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <button 
+                              onClick={() => setRows([])} 
+                              className="text-sm px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors min-h-[44px] touch-manipulation"
+                            >
+                              Clear list
+                            </button>
                           </div>
                         </div>
 
@@ -877,14 +1070,14 @@ export default function AfterschoolFilterPage() {
                           {activitiesCatalog.map(a => <option key={a} value={a} />)}
                         </datalist>
 
-                        <div className="overflow-auto rounded-xl border max-h-96 border-gray-200">
-                          <table className="w-full text-sm">
-                            <thead className="bg-gray-100 sticky top-0">
+                        <div className="overflow-auto rounded-xl border border-gray-200 max-h-96">
+                          <table className="w-full text-xs sm:text-sm">
+                            <thead className="bg-gray-100 sticky top-0 z-10">
                               <tr>
-              <th className="text-left px-2 md:px-3 py-2">Student</th>
-              <th className="text-left px-2 md:px-3 py-2">Grade/Sub</th>
-              <th className="text-left px-2 md:px-3 py-2">Current afterschool</th>
-              <th className="text-left px-2 md:px-3 py-2">Action</th>
+                                <th className="text-left px-2 sm:px-3 py-3 font-semibold min-w-[100px]">Student</th>
+                                <th className="text-left px-2 sm:px-3 py-3 font-semibold whitespace-nowrap w-20">Grade/Sub</th>
+                                <th className="text-left px-2 sm:px-3 py-3 font-semibold min-w-[180px]">Current afterschool</th>
+                                <th className="text-left px-2 sm:px-3 py-3 font-semibold min-w-[140px]">Action</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -893,27 +1086,41 @@ export default function AfterschoolFilterPage() {
                                 .filter(s=>{ const q=mSearch.trim().toLowerCase(); return q ? (`${s.first} ${s.last}`.toLowerCase().includes(q) || s.id.toLowerCase().includes(q)) : true; })
                                 .sort((a,b)=> (a.grade===b.grade? a.subClass.localeCompare(b.subClass): (a.grade==="K"?0:a.grade) - (b.grade==="K"?0:b.grade)) || fullName(a).localeCompare(fullName(b)))
                                 .map(s=> (
-                                  <tr key={s.id} className="border-t border-gray-200">
-                                    <td className="px-2 md:px-3 py-2 whitespace-nowrap">{fullName(s)}</td>
-                                    <td className="px-2 md:px-3 py-2">{s.grade === "K" ? "K" : s.grade}/{s.subClass}</td>
-                                    <td className="px-2 md:px-3 py-2">
-                                      <div className="flex flex-wrap gap-2">
+                                  <tr key={s.id} className="border-t border-gray-200 hover:bg-gray-50 transition-colors">
+                                    <td className="px-2 sm:px-3 py-3 font-medium break-words">{fullName(s)}</td>
+                                    <td className="px-2 sm:px-3 py-3 text-center whitespace-nowrap">{s.grade === "K" ? "K" : s.grade}/{s.subClass}</td>
+                                    <td className="px-2 sm:px-3 py-3">
+                                      <div className="flex flex-wrap gap-1.5">
                                         {s.activities.filter(a => a.when === "afterschool").map((a, idx) => (
                                           <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 border text-xs">
-                                            <span className="inline-block w-2.5 h-2.5 rounded-full border" style={{ backgroundColor: activityColors[a.name] || '#e5e7eb', borderColor: activityColors[a.name] || '#e5e7eb' }} />
-                                            {a.name}{a.day ? `· ${a.day}` : ""}
-                                            <button className="ml-1 text-red-600" onClick={() => removeActivityFromStudent(s.id, a.name, a.day)}>×</button>
+                                            <span className="inline-block w-2.5 h-2.5 rounded-full border shrink-0" style={{ backgroundColor: activityColors[a.name] || '#e5e7eb', borderColor: activityColors[a.name] || '#e5e7eb' }} />
+                                            <span className="break-words">{a.name}</span>{a.day ? ` · ${a.day}` : ""}
+                                            <button 
+                                              className="ml-1 text-red-600 hover:text-red-800 font-bold min-w-[20px] min-h-[20px] flex items-center justify-center touch-manipulation" 
+                                              onClick={() => removeActivityFromStudent(s.id, a.name, a.day)}
+                                              aria-label={`Remove ${a.name}`}
+                                            >×</button>
                                           </span>
                                         ))}
                                         {s.activities.filter(a => a.when === "afterschool").length === 0 && (
-                                          <span className="text-xs text-gray-500">None</span>
+                                          <span className="text-xs text-gray-500 italic">None</span>
                                         )}
                                       </div>
                                     </td>
-                                    <td className="px-2 md:px-3 py-2">
-                                      <div className="flex items-center gap-2">
-                                        <button onClick={() => assignActivityToStudent(s.id)} className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm">Assign</button>
-                                        <button onClick={() => deleteStudent(s.id)} className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-sm">Delete</button>
+                                    <td className="px-2 sm:px-3 py-3">
+                                      <div className="flex flex-col sm:flex-row items-stretch gap-2">
+                                        <button 
+                                          onClick={() => assignActivityToStudent(s.id)} 
+                                          className="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs sm:text-sm font-medium hover:bg-blue-700 active:bg-blue-800 transition-colors min-h-[40px] touch-manipulation whitespace-nowrap"
+                                        >
+                                          Assign
+                                        </button>
+                                        <button 
+                                          onClick={() => deleteStudent(s.id)} 
+                                          className="px-3 py-2 rounded-lg bg-red-600 text-white text-xs sm:text-sm font-medium hover:bg-red-700 active:bg-red-800 transition-colors min-h-[40px] touch-manipulation whitespace-nowrap"
+                                        >
+                                          Delete
+                                        </button>
                                       </div>
                                     </td>
                                   </tr>
@@ -923,7 +1130,12 @@ export default function AfterschoolFilterPage() {
                         </div>
 
                         <div className="flex justify-end mt-4">
-                          <button onClick={commitImport} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Add to database</button>
+                          <button 
+                            onClick={commitImport} 
+                            className="px-6 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm hover:shadow min-h-[44px] touch-manipulation"
+                          >
+                            Add to database
+                          </button>
                         </div>
                       </section>
                     )}
@@ -933,38 +1145,80 @@ export default function AfterschoolFilterPage() {
                 {view === "activities" && (
                   <>
                     <header className="mb-6">
-                      <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Activities</h1>
-                      <p className="text-sm text-gray-600 mt-1">Create and manage the list of school activities. These will be selectable or type-ahead in other tabs.</p>
+                      <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Activities</h1>
+                      <p className="text-sm text-gray-600 mt-2">Create and manage the list of school activities. These will be selectable or type-ahead in other tabs.</p>
                     </header>
-                    <section className="bg-white rounded-2xl shadow p-4 md:p-6 mb-6 border border-gray-200">
-                      <h2 className="text-lg font-semibold mb-3">Add a new activity</h2>
-                      <div className="flex gap-3 items-end flex-wrap">
-                        <div className="flex-1">
-                          <label className="block text-sm font-medium mb-1">Activity name</label>
-                          <input value={newActivity} onChange={e => setNewActivity(e.target.value)} placeholder="e.g., Yoga" className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <section className="bg-gray-50 rounded-2xl shadow-sm border border-gray-200 p-3 sm:p-4 md:p-6 mb-6">
+                      <h2 className="text-lg font-semibold mb-4">Add a new activity</h2>
+                      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end flex-wrap">
+                        <div className="flex-1 min-w-[200px]">
+                          <label className="block text-sm font-medium mb-1.5 text-gray-700">Activity name</label>
+                          <input 
+                            value={newActivity} 
+                            onChange={e => setNewActivity(e.target.value)} 
+                            placeholder="e.g., Yoga" 
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]" 
+                          />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-1">Color</label>
-                          <input type="color" value={newActivityColor} onChange={e => setNewActivityColor(e.target.value)} className="h-10 w-14 p-1 rounded border" />
+                          <label className="block text-sm font-medium mb-1.5 text-gray-700">Color</label>
+                          <input 
+                            type="color" 
+                            value={newActivityColor} 
+                            onChange={e => setNewActivityColor(e.target.value)} 
+                            className="h-[44px] w-full sm:w-20 p-1 rounded-lg border border-gray-300 cursor-pointer" 
+                          />
                         </div>
-                        <button onClick={() => { const n = newActivity.trim(); if (!n) return; setActivities(prev => prev.includes(n) ? prev : [...prev, n].sort((a,b)=>a.localeCompare(b))); setActivityColors(prev => ({ ...prev, [n]: newActivityColor })); setNewActivity(""); }} className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">Add</button>
+                        <button 
+                          onClick={() => { 
+                            const n = newActivity.trim(); 
+                            if (!n) return; 
+                            setActivities(prev => prev.includes(n) ? prev : [...prev, n].sort((a,b)=>a.localeCompare(b))); 
+                            setActivityColors(prev => ({ ...prev, [n]: newActivityColor })); 
+                            setNewActivity(""); 
+                          }} 
+                          className="px-6 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 active:bg-indigo-800 transition-colors shadow-sm hover:shadow min-h-[44px] touch-manipulation"
+                        >
+                          Add Activity
+                        </button>
                       </div>
                     </section>
-                    <section className="bg-white rounded-2xl shadow p-4 md:p-6 border border-gray-200">
-                      <h2 className="text-lg font-semibold mb-3">Existing activities</h2>
+                    <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-3 sm:p-4 md:p-6">
+                      <h2 className="text-lg font-semibold mb-4">Existing activities</h2>
                       {activitiesCatalog.length === 0 ? (
-                        <p className="text-sm text-gray-600">No activities yet. Add your first above.</p>
+                        <div className="text-center py-12">
+                          <IconActivity size={40} className="mx-auto text-gray-300 mb-3" />
+                          <p className="text-sm text-gray-600">No activities yet. Add your first above.</p>
+                        </div>
                       ) : (
                         <ul className="divide-y rounded-xl border border-gray-200">
                           {activitiesCatalog.map(a => (
-                            <li key={a} className="flex items-center justify-between p-3 gap-3">
-                              <div className="flex items-center gap-3">
-                                <span className="inline-block w-4 h-4 rounded border" style={{ backgroundColor: activityColors[a] || '#e5e7eb', borderColor: activityColors[a] || '#e5e7eb' }} />
-                                <span>{a}</span>
+                            <li key={a} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 gap-3 hover:bg-gray-50 transition-colors">
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <span 
+                                  className="inline-block w-6 h-6 rounded-lg border-2 shrink-0" 
+                                  style={{ backgroundColor: activityColors[a] || '#e5e7eb', borderColor: activityColors[a] || '#e5e7eb' }} 
+                                />
+                                <span className="font-medium truncate">{a}</span>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <input type="color" value={activityColors[a] || '#e5e7eb'} onChange={e => setActivityColors(prev => ({ ...prev, [a]: e.target.value }))} className="h-8 w-10 p-1 rounded border" />
-                                <button className="text-sm px-3 py-1.5 rounded-lg border hover:bg-gray-50" onClick={() => { setActivities(prev => prev.filter(x => x !== a)); setActivityColors(prev => { const c = { ...prev }; delete c[a]; return c; }); }}>Delete</button>
+                              <div className="flex items-center gap-2 sm:gap-3">
+                                <input 
+                                  type="color" 
+                                  value={activityColors[a] || '#e5e7eb'} 
+                                  onChange={e => setActivityColors(prev => ({ ...prev, [a]: e.target.value }))} 
+                                  className="h-10 w-16 p-1 rounded-lg border border-gray-300 cursor-pointer" 
+                                  aria-label={`Color for ${a}`}
+                                />
+                                <button 
+                                  className="text-sm px-3 py-2 rounded-lg border border-red-300 text-red-600 hover:bg-red-50 transition-colors min-h-[40px] min-w-[80px] touch-manipulation" 
+                                  onClick={() => { 
+                                    if (!confirm(`Delete "${a}"? This cannot be undone.`)) return;
+                                    setActivities(prev => prev.filter(x => x !== a)); 
+                                    setActivityColors(prev => { const c = { ...prev }; delete c[a]; return c; }); 
+                                  }}
+                                >
+                                  Delete
+                                </button>
                               </div>
                             </li>
                           ))}
